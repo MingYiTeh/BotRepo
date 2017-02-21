@@ -110,6 +110,65 @@ function sendTopNews(session, results, body){
         .attachments(cards);
     session.send(msg);
 }
+
+var IMAGEANALYSEKEY = '6b7f1d64bb254d07a6dd96df18ac4146'; 
+
+bot.dialog('/analyseImage', [
+        function (session){
+        // Ask the user which category they would like
+        // Choices are separated by |
+        builder.Prompts.text(session, "Send me the link please.");
+},function (session, results, next){
+    if (results.response && results.response.entity !== 'end') {
+        // The user returns an image URL
+           //Show user that we're processing their request by sending the typing indicator
+            //console.log("hello"+results.response);
+            session.sendTyping();
+            // Build the url we'll be calling to get cognitive vision
+            var url = "https://westus.api.cognitive.microsoft.com/vision/v1.0/describe?maxCandidates=1";
+            // Build options for the request
+            var options = {
+            method: 'POST', // thie API call is a post request
+            uri: url,
+            headers: {
+                'Ocp-Apim-Subscription-Key': IMAGEANALYSEKEY,
+                'Content-Type': 'application/json'
+            },
+            body: {
+                url: results.response
+            },
+            json: true
+        }
+                    //Make the call
+            rp(options).then(function (body){
+                // The request is successful
+                //doSomething
+                sendImageDescription(session, results, body);
+            }).catch(function (err){
+                // An error occurred and the request failed
+                console.log(err.message);
+                session.send("Argh, something went wrong. :( Try again?");
+            }).finally(function () {
+                // This is executed at the end, regardless of whether the request is successful or not
+                session.endDialog();
+            });
+        } else {
+            // The user choses to quit
+            session.endDialog("Ok. Mission Aborted.");
+        }
+    }
+]);
+
+// This function processes the results from the API call to category news and sends it as cards
+function sendImageDescription(session, results, body){
+    session.send("Analyzed image");
+    //Show user that we're processing by sending the typing indicator
+    session.sendTyping();
+    session.send(body.description.captions[0]);
+}
+
+
+
 //=========================================================
 // Bots Dialogs
 //=========================================================
